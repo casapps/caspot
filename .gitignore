@@ -1,0 +1,45 @@
+# Binaries
+build/
+*.exe
+caspot
+caspot-*
+
+# Go artifacts
+*.test
+*.out
+coverage.*
+vendor/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Config files
+.env
+config.yaml
+config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Logs
+*.log
+/var/
+/tmp/
+
+# Test data
+testdata/
+
+# Docker
+docker-compose.override.yml

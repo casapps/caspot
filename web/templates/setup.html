@@ -1,0 +1,42 @@
+{{define "content"}}
+<div class="container" style="max-width: 500px; margin-top: 50px;">
+    <div class="card">
+        <h2 style="text-align: center; margin-bottom: 30px;">Welcome to caspot</h2>
+        <p style="text-align: center; color: #8892b0; margin-bottom: 30px;">
+            Let's set up your administrator account
+        </p>
+
+        {{if .Error}}
+        <div class="alert alert-error">
+            {{.Error}}
+        </div>
+        {{end}}
+
+        <form method="POST" action="/setup">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="administrator" readonly style="background: #1e2749;">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required minlength="12" autofocus>
+                <small style="color: #8892b0; display: block; margin-top: 5px;">Minimum 12 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+                <small style="color: #8892b0; display: block; margin-top: 5px;">For alerts and recovery</small>
+            </div>
+
+            <div class="form-group">
+                <label for="fullName">Full Name (optional)</label>
+                <input type="text" id="fullName" name="fullName">
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%;">Create Administrator Account</button>
+        </form>
+    </div>
+</div>
+{{end}}

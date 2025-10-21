@@ -1,0 +1,172 @@
+{{define "content"}}
+<div class="header">
+    <div class="container">
+        <h1>caspot Honeypot Dashboard</h1>
+        <div class="nav">
+            <a href="/">Dashboard</a>
+            <a href="/services">Services</a>
+            <a href="/events">Events</a>
+            <a href="/config">Configuration</a>
+            <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;">Logout</a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="stats-grid" id="stats">
+        <div class="stat-card">
+            <h3>Total Events</h3>
+            <div class="value" id="totalEvents">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Active Services</h3>
+            <div class="value" id="activeServices">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Unique IPs</h3>
+            <div class="value" id="uniqueIPs">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Last 24 Hours</h3>
+            <div class="value" id="last24Hours">-</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Active Services</h2>
+        <table id="servicesTable">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Port</th>
+                    <th>Protocol</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="servicesBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #8892b0;">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Recent Events</h2>
+        <table id="eventsTable">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Service</th>
+                    <th>Source IP</th>
+                    <th>Type</th>
+                    <th>Severity</th>
+                </tr>
+            </thead>
+            <tbody id="eventsBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #8892b0;">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<form id="logoutForm" method="POST" action="/logout" style="display: none;"></form>
+
+<script>
+async function loadDashboard() {
+    try {
+        const statsResponse = await fetch('/api/v1/dashboard');
+        const stats = await statsResponse.json();
+
+        document.getElementById('totalEvents').textContent = stats.TotalEvents || 0;
+        document.getElementById('activeServices').textContent = stats.ActiveServices || 0;
+        document.getElementById('uniqueIPs').textContent = stats.UniqueIPs || 0;
+        document.getElementById('last24Hours').textContent = stats.Last24Hours || 0;
+
+        const servicesResponse = await fetch('/api/v1/services');
+        const services = await servicesResponse.json();
+
+        const servicesBody = document.getElementById('servicesBody');
+        servicesBody.innerHTML = '';
+
+        if (services && services.length > 0) {
+            services.forEach(service => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${service.Display}</td>
+                    <td>${service.Port}</td>
+                    <td>${service.Protocol.toUpperCase()}</td>
+                    <td><span class="badge ${service.Status === 'running' ? 'badge-success' : 'badge-danger'}">${service.Status}</span></td>
+                    <td>
+                        ${service.Status === 'running'
+                            ? `<button class="btn btn-danger" onclick="controlService('${service.Name}', 'stop')">Stop</button>`
+                            : `<button class="btn" onclick="controlService('${service.Name}', 'start')">Start</button>`}
+                    </td>
+                `;
+                servicesBody.appendChild(row);
+            });
+        }
+
+        const eventsResponse = await fetch('/api/v1/events?limit=10');
+        const events = await eventsResponse.json();
+
+        const eventsBody = document.getElementById('eventsBody');
+        eventsBody.innerHTML = '';
+
+        if (events && events.length > 0) {
+            events.forEach(event => {
+                const row = document.createElement('tr');
+                const timestamp = new Date(event.timestamp).toLocaleString();
+                const severityClass = event.severity === 'high' ? 'badge-danger' :
+                                     event.severity === 'medium' ? 'badge-warning' : 'badge-info';
+
+                row.innerHTML = `
+                    <td>${timestamp}</td>
+                    <td>${event.service}</td>
+                    <td>${event.sourceIP}</td>
+                    <td>${event.type}</td>
+                    <td><span class="badge ${severityClass}">${event.severity}</span></td>
+                `;
+                eventsBody.appendChild(row);
+            });
+        } else {
+            eventsBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #8892b0;">No events yet</td></tr>';
+        }
+    } catch (error) {
+        console.error('Failed to load dashboard:', error);
+    }
+}
+
+async function controlService(name, action) {
+    try {
+        const formData = new FormData();
+        formData.append('action', action);
+
+        const response = await fetch(`/api/v1/services/${name}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            loadDashboard();
+        }
+    } catch (error) {
+        console.error('Failed to control service:', error);
+    }
+}
+
+loadDashboard();
+setInterval(loadDashboard, 5000);
+
+const ws = new WebSocket(`ws://${window.location.host}/api/v1/ws`);
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'new_events') {
+        loadDashboard();
+    }
+};
+</script>
+{{end}}

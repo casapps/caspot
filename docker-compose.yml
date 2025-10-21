@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  caspot:
+    image: ghcr.io/casapps/caspot:latest
+    container_name: caspot
+    restart: unless-stopped
+    ports:
+      # Admin panel
+      - "8080:8080"
+
+      # Honeypot services
+      - "21:21"       # FTP
+      - "22:22"       # SSH
+      - "23:23"       # Telnet
+      - "25:25"       # SMTP
+      - "53:53/udp"   # DNS
+      - "69:69/udp"   # TFTP
+      - "80:80"       # HTTP
+      - "161:161/udp" # SNMP
+      - "389:389"     # LDAP
+      - "443:443"     # HTTPS
+      - "445:445"     # SMB
+      - "514:514/udp" # Syslog
+      - "636:636"     # LDAPS
+      - "3306:3306"   # MySQL
+      - "3389:3389"   # RDP
+      - "5432:5432"   # PostgreSQL
+      - "5900:5900"   # VNC
+      - "6379:6379"   # Redis
+
+    volumes:
+      - caspot-data:/var/lib/caspot
+      - caspot-logs:/var/log/caspot
+
+    environment:
+      - TZ=UTC
+
+    networks:
+      - honeypot
+
+    healthcheck:
+      test: ["/caspot", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  caspot-data:
+    driver: local
+  caspot-logs:
+    driver: local
+
+networks:
+  honeypot:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
